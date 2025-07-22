@@ -1,0 +1,73 @@
+-- 获取本地玩家
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- 坐标列表
+local coordinates = {
+    Vector3.new(-233.79, 4.00, 214.78),
+    Vector3.new(-232.29, 4.06, 135.85),
+    Vector3.new(-230.52, 4.06, 42.00),
+    Vector3.new(-231.89, 4.06, -35.19),
+    Vector3.new(-231.19, 4.06, -128.22),
+    Vector3.new(-73.69, 4.06, -206.95),
+    Vector3.new(8.26, 4.06, -207.98),
+    Vector3.new(35.96, 75.06, -206.02),
+    Vector3.new(131.05, 4.06, -208.49),
+    Vector3.new(210.18, 73.81, -202.05),
+    Vector3.new(251.75, 3.81, -200.11),
+    Vector3.new(373.66, 3.81, -202.70),
+    Vector3.new(439.84, 4.06, -201.17),
+    Vector3.new(527.87, 4.06, -200.19),
+    Vector3.new(634.62, 4.06, -201.80),
+    Vector3.new(727.19, 4.06, -201.52),
+    Vector3.new(832.57, 4.11, -200.19),
+    Vector3.new(827.87, 4.06, -121.13),
+    Vector3.new(790.80, 4.06, 82.74),
+    Vector3.new(788.15, 4.06, 319.08),
+    Vector3.new(793.69, 4.06, 444.27),
+    Vector3.new(793.16, 4.06, 592.60),
+    Vector3.new(789.43, 4.11, 667.21),
+    Vector3.new(661.31, 4.06, 666.76),
+    Vector3.new(550.82, 4.06, 666.44),
+    Vector3.new(411.12, 4.06, 668.97),
+    Vector3.new(317.24, 103.06, 667.72),
+    Vector3.new(202.65, 103.06, 668.96),
+    Vector3.new(-182.66, 4.06, 665.86),
+    Vector3.new(-339.78, 4.06, 667.80),
+    Vector3.new(-486.27, 4.06, 665.01),
+    Vector3.new(-551.13, 4.05, 669.29),
+    Vector3.new(-640.75, 4.05, 668.30),
+    Vector3.new(-888.51, 4.05, 667.36),
+    Vector3.new(-947.95, 3.05, 668.08),
+    Vector3.new(-1041.02, 3.05, 665.29),
+    Vector3.new(-1122.46, 3.05, 665.98),
+    Vector3.new(-1205.29, 3.05, 666.76),
+    Vector3.new(-1282.83, 3.05, 667.59),
+    Vector3.new(-1403.34, 3.05, 670.35),
+    Vector3.new(-1539.72, 3.05, 666.13),
+    Vector3.new(-1740.62, 3.05, 667.76),
+    Vector3.new(-1916.16, 34.09, 667.61),
+    Vector3.new(-2090.35, 47.09, 668.05),
+    Vector3.new(-2216.52, 47.09, 669.52),
+    Vector3.new(-2239.98, 191.05, 665.79)
+}
+
+-- 传送函数
+local function teleportPlayer(position)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(position)
+    else
+        warn("角色或HumanoidRootPart未找到，传送失败")
+    end
+end
+
+-- 按顺序传送
+local function startTeleportSequence()
+    for i, coord in ipairs(coordinates) do
+        teleportPlayer(coord)
+        wait(1) -- 每次传送间隔2秒，可调整
+    end
+end
+
+-- 立即开始传送
+startTeleportSequence()
