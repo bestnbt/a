@@ -1,0 +1,84 @@
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+
+local coordinates = {
+    Vector3.new(20.21, 12.79, 97.04),
+    Vector3.new(32.68, 25.20, 95.23),
+    Vector3.new(45.39, 37.80, 93.71),
+    Vector3.new(60.31, 52.80, 91.63),
+    Vector3.new(76.47, 69.00, 91.95),
+    Vector3.new(85.20, 77.80, 91.74),
+    Vector3.new(96.90, 89.29, 92.33),
+    Vector3.new(112.23, 104.80, 92.20),
+    Vector3.new(125.64, 118.20, 89.79),
+    Vector3.new(140.02, 132.60, 89.42),
+    Vector3.new(154.84, 149.44, 89.53),
+    Vector3.new(169.65, 162.19, 89.62),
+    Vector3.new(184.07, 176.60, 90.02),
+    Vector3.new(197.05, 191.95, 88.77),
+    Vector3.new(209.35, 206.32, 89.54),
+    Vector3.new(226.90, 219.39, 88.94),
+    Vector3.new(239.77, 232.20, 89.17),
+    Vector3.new(254.00, 246.40, 88.56),
+    Vector3.new(286.44, 279.00, 90.59),
+    Vector3.new(310.19, 302.60, 90.90),
+    Vector3.new(323.47, 316.00, 92.67),
+    Vector3.new(338.44, 331.00, 91.99),
+    Vector3.new(353.97, 346.40, 90.35),
+    Vector3.new(371.71, 364.20, 91.07),
+    Vector3.new(388.71, 381.20, 90.49),
+    Vector3.new(404.67, 397.19, 91.13),
+    Vector3.new(422.57, 415.00, 92.20),
+    Vector3.new(438.76, 431.20, 93.08),
+    Vector3.new(454.46, 447.00, 93.94),
+    Vector3.new(470.99, 463.40, 93.78),
+    Vector3.new(486.99, 479.40, 93.23),
+    Vector3.new(502.60, 495.00, 92.22),
+    Vector3.new(519.36, 511.79, 92.16),
+    Vector3.new(535.94, 528.40, 91.36),
+    Vector3.new(549.81, 542.40, 91.99),
+    Vector3.new(563.38, 555.80, 92.21),
+    Vector3.new(575.66, 568.20, 90.45),
+    Vector3.new(589.68, 582.20, 91.00),
+    Vector3.new(602.36, 594.79, 91.00),
+    Vector3.new(615.22, 607.80, 92.03),
+    Vector3.new(629.55, 622.00, 92.06),
+    Vector3.new(642.70, 635.20, 91.74),
+    Vector3.new(656.73, 649.20, 91.18),
+    Vector3.new(671.20, 663.60, 92.78),
+    Vector3.new(685.71, 678.19, 92.71),
+    Vector3.new(696.73, 689.20, 94.03),
+    Vector3.new(710.71, 703.20, 92.81),
+    Vector3.new(724.79, 717.20, 93.77),
+    Vector3.new(740.95, 733.40, 94.67),
+    Vector3.new(763.39, 755.80, 96.66),
+    Vector3.new(784.62, 777.19, 97.27),
+    Vector3.new(798.90, 791.40, 97.00),
+    Vector3.new(836.41, 829.07, 92.87),
+    Vector3.new(866.63, 859.20, 95.70),
+    Vector3.new(896.62, 889.20, 94.17),
+    Vector3.new(925.83, 918.40, 94.61),
+    Vector3.new(957.04, 949.60, 93.64),
+    Vector3.new(988.53, 981.00, 92.53),
+    Vector3.new(1014.58, 1006.05, 93.42)
+}
+
+local function teleportPlayer(position)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(position)
+    else
+        warn("HumanoidRootPart")
+    end
+end
+
+local function startTeleportSequence()
+    for i, coord in ipairs(coordinates) do
+        teleportPlayer(coord)
+        wait(0) 
+    end
+end
+
+
+startTeleportSequence()
