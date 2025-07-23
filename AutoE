@@ -1,0 +1,130 @@
+-- 获取服务
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local StarterGui = game:GetService("StarterGui")
+
+-- 全局变量
+_G.AutoInteractEnabled = false
+local originalDurations = {} -- 存储原始HoldDuration
+
+-- 即时交互函数
+local function makeInstant(prompt)
+    if prompt:IsA("ProximityPrompt") then
+        originalDurations[prompt] = prompt.HoldDuration -- 保存原始值
+        prompt.HoldDuration = 0
+    end
+end
+
+local function restoreDuration(prompt)
+    if prompt:IsA("ProximityPrompt") and originalDurations[prompt] then
+        prompt.HoldDuration = originalDurations[prompt]
+    end
+end
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "LsrHub"
+screenGui.ResetOnSpawn = false -- 死亡后不重置GUI
+screenGui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 100)
+frame.Position = UDim2.new(0.5, -100, 0.5, -50) -- 屏幕中心
+frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.Text = "AutoE"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+title.TextScaled = true
+title.Parent = frame
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0.8, 0, 0, 40)
+toggleButton.Position = UDim2.new(0.1, 0, 0, 50)
+toggleButton.Text = "Auto Interact: OFF"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+toggleButton.TextScaled = true
+toggleButton.Parent = frame
+
+-- 圆角效果
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 10)
+uiCorner.Parent = frame
+uiCorner:Clone().Parent = toggleButton
+
+-- 开关逻辑
+local function toggleAutoInteract()
+    _G.AutoInteractEnabled = not _G.AutoInteractEnabled
+    toggleButton.Text = "Auto Interact: " .. (_G.AutoInteractEnabled and "ON" or "OFF")
+    toggleButton.BackgroundColor3 = _G.AutoInteractEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(70, 70, 70)
+
+    if _G.AutoInteractEnabled then
+        -- 启用即时交互
+        for _, descendant in pairs(game:GetDescendants()) do
+            makeInstant(descendant)
+        end
+        local connection = game.DescendantAdded:Connect(makeInstant)
+
+        -- 无条件自动模拟“E”键
+        task.spawn(function()
+            while _G.AutoInteractEnabled do
+                task.wait(0.1) -- 按键频率
+                VirtualInputManager:SendKeyEvent(true, "E", false, game)
+                task.wait(0.01) -- 模拟按键持续时间
+                VirtualInputManager:SendKeyEvent(false, "E", false, game)
+            end
+            -- 清理连接
+            connection:Disconnect()
+        end)
+    else
+        -- 关闭时恢复原始HoldDuration
+        for _, descendant in pairs(game:GetDescendants()) do
+            restoreDuration(descendant)
+        end
+    end
+end
+
+-- 绑定按钮点击
+toggleButton.MouseButton1Click:Connect(toggleAutoInteract)
+
+-- 支持拖动GUI
+local dragging, dragInput, dragStart, startPos
+
+local function updateInput(input)
+    local delta = input.Position - dragStart
+    frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        updateInput(input)
+    end
+end)
