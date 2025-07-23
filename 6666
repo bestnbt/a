@@ -1,0 +1,23 @@
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local Character = LocalPlayer.Character or (LocalPlayer.CharacterAdded:wait() and LocalPlayer.Character)
+
+local DisconnectStamina = function(TargetHumanoid)
+    task.wait(1)
+    local JumpConns = getconnections(TargetHumanoid.Jumping)
+    for _, JumpConn in pairs(JumpConns) do
+        JumpConn:Disconnect()
+    end
+end
+
+local HandleChar = function(Character)
+    local Humanoid = Character:WaitForChild("Humanoid", 10)
+    if Humanoid then
+        DisconnectStamina(Humanoid)
+        print("Infinite Stamina Active. (tomato.txt)")
+    else
+        print("Oops")
+    end
+end
+
+HandleChar(Character)
+LocalPlayer.CharacterAdded:Connect(HandleChar)
