@@ -1,0 +1,306 @@
+local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false
+
+-- Create GUI frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 300)
+frame.Position = UDim2.new(0, 10, 0, 10)
+frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+-- Make GUI draggable
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Text = "Coordinate Recorder"
+title.TextSize = 16
+title.Font = Enum.Font.SourceSansBold
+title.Parent = frame
+
+-- Minimize/Restore button
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 30, 0, 30)
+minimizeButton.Position = UDim2.new(1, -35, 0, 0)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+minimizeButton.TextColor3 = Color3.new(1, 1, 1)
+minimizeButton.Text = "-"
+minimizeButton.TextSize = 16
+minimizeButton.Parent = title
+
+-- Note input box
+local noteInput = Instance.new("TextBox")
+noteInput.Size = UDim2.new(1, -10, 0, 30)
+noteInput.Position = UDim2.new(0, 5, 0, 35)
+noteInput.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+noteInput.TextColor3 = Color3.new(1, 1, 1)
+noteInput.TextSize = 14
+noteInput.Font = Enum.Font.SourceSans
+noteInput.PlaceholderText = "Enter note..."
+noteInput.Text = ""
+noteInput.Parent = frame
+
+-- Scrolling frame
+local scrollingFrame = Instance.new("ScrollingFrame")
+scrollingFrame.Size = UDim2.new(1, -10, 1, -130)
+scrollingFrame.Position = UDim2.new(0, 5, 0, 70)
+scrollingFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+scrollingFrame.BorderSizePixel = 0
+scrollingFrame.ScrollBarThickness = 8
+scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollingFrame.Parent = frame
+
+-- Record container (for dynamically adding records)
+local recordContainer = Instance.new("Frame")
+recordContainer.Size = UDim2.new(1, 0, 0, 0)
+recordContainer.Position = UDim2.new(0, 0, 0, 0)
+recordContainer.BackgroundTransparency = 1
+recordContainer.Parent = scrollingFrame
+
+local uiListLayout = Instance.new("UIListLayout")
+uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+uiListLayout.Padding = UDim.new(0, 5)
+uiListLayout.Parent = recordContainer
+
+-- Record button
+local recordButton = Instance.new("TextButton")
+recordButton.Size = UDim2.new(0.45, -5, 0, 30)
+recordButton.Position = UDim2.new(0, 5, 1, -60)
+recordButton.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+recordButton.TextColor3 = Color3.new(1, 1, 1)
+recordButton.Text = "Record Coordinate"
+recordButton.TextSize = 14
+recordButton.Parent = frame
+
+-- End and copy button
+local endButton = Instance.new("TextButton")
+endButton.Size = UDim2.new(0.45, -5, 0, 30)
+endButton.Position = UDim2.new(0.55, 0, 1, -60)
+endButton.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+endButton.TextColor3 = Color3.new(1, 1, 1)
+endButton.Text = "End and Copy"
+endButton.TextSize = 14
+endButton.Parent = frame
+
+-- Coordinate and note list
+local coordinates = {}
+
+-- Copy to clipboard
+local function copyToClipboard(text)
+    if setclipboard then
+        setclipboard(text)
+        StarterGui:SetCore("SendNotification", {
+            Title = "Copied",
+            Text = "All coordinates and notes copied to clipboard",
+            Duration = 3
+        })
+    else
+        warn("Clipboard function not supported on this device")
+    end
+end
+
+-- Get player position
+local function getPlayerPosition()
+    local character = player.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local position = character.HumanoidRootPart.Position
+        return string.format("%.2f, %.2f, %.2f", position.X, position.Y, position.Z)
+    end
+    return nil
+end
+
+-- Update scrolling frame canvas size
+local function updateCanvasSize()
+    local totalHeight = uiListLayout.AbsoluteContentSize.Y
+    recordContainer.Size = UDim2.new(1, 0, 0, totalHeight)
+    scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight + 10)
+end
+
+-- Create UI for a single record
+local function createRecordUI(index, position, note)
+    local recordFrame = Instance.new("Frame")
+    recordFrame.Size = UDim2.new(1, 0, 0, 30)
+    recordFrame.BackgroundTransparency = 1
+    recordFrame.LayoutOrder = index
+    recordFrame.Parent = recordContainer
+
+    local recordText = Instance.new("TextBox")
+    recordText.Size = UDim2.new(0.7, -5, 1, 0)
+    recordText.Position = UDim2.new(0, 0, 0, 0)
+    recordText.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+    recordText.TextColor3 = Color3.new(1, 1, 1)
+    recordText.TextSize = 14
+    recordText.Font = Enum.Font.SourceSans
+    recordText.Text = position .. " - " .. note
+    recordText.TextXAlignment = Enum.TextXAlignment.Left
+    recordText.ClearTextOnFocus = false
+    recordText.Parent = recordFrame
+
+    local deleteButton = Instance.new("TextButton")
+    deleteButton.Size = UDim2.new(0.15, 0, 1, 0)
+    deleteButton.Position = UDim2.new(0.75, 0, 0, 0)
+    deleteButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    deleteButton.TextColor3 = Color3.new(1, 1, 1)
+    deleteButton.Text = "X"
+    deleteButton.TextSize = 14
+    deleteButton.Parent = recordFrame
+
+    local editButton = Instance.new("TextButton")
+    editButton.Size = UDim2.new(0.15, 0, 1, 0)
+    editButton.Position = UDim2.new(0.9, 0, 0, 0)
+    editButton.BackgroundColor3 = Color3.fromRGB(0, 0, 150)
+    editButton.TextColor3 = Color3.new(1, 1, 1)
+    editButton.Text = "E"
+    editButton.TextSize = 14
+    editButton.Parent = recordFrame
+
+    -- Delete record
+    deleteButton.MouseButton1Click:Connect(function()
+        table.remove(coordinates, index)
+        recordFrame:Destroy()
+        for i, otherFrame in ipairs(recordContainer:GetChildren()) do
+            if otherFrame:IsA("Frame") then
+                otherFrame.LayoutOrder = i
+                local otherDeleteButton = otherFrame:FindFirstChildWhichIsA("TextButton", true)
+                local otherEditButton = otherFrame:FindFirstChildWhichIsA("TextButton", true, otherDeleteButton)
+                otherDeleteButton.MouseButton1Click:Connect(function()
+                    table.remove(coordinates, i)
+                    otherFrame:Destroy()
+                    updateCanvasSize()
+                end)
+                otherEditButton.MouseButton1Click:Connect(function()
+                    noteInput.Text = coordinates[i]:match(".- %- (.+)") or "No note"
+                    table.remove(coordinates, i)
+                    otherFrame:Destroy()
+                    updateCanvasSize()
+                end)
+            end
+        end
+        updateCanvasSize()
+    end)
+
+    -- Edit record
+    editButton.MouseButton1Click:Connect(function()
+        noteInput.Text = note ~= "No note" and note or ""
+        table.remove(coordinates, index)
+        recordFrame:Destroy()
+        updateCanvasSize()
+    end)
+end
+
+-- Record coordinate and note
+recordButton.MouseButton1Click:Connect(function()
+    local position = getPlayerPosition()
+    if position then
+        local note = noteInput.Text ~= "" and noteInput.Text or "No note"
+        local entry = position .. " - " .. note
+        table.insert(coordinates, entry)
+        createRecordUI(#coordinates, position, note)
+        updateCanvasSize()
+        noteInput.Text = ""
+        StarterGui:SetCore("SendNotification", {
+            Title = "Coordinate Recorded",
+            Text = "Recorded: " .. entry,
+            Duration = 2
+        })
+    else
+        warn("Unable to retrieve player coordinates")
+    end
+end)
+
+-- End and copy
+endButton.MouseButton1Click:Connect(function()
+    if #coordinates > 0 then
+        local allCoords = table.concat(coordinates, "\n")
+        copyToClipboard(allCoords)
+        coordinates = {}
+        recordContainer:ClearAllChildren()
+        local newUIListLayout = Instance.new("UIListLayout")
+        newUIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        newUIListLayout.Padding = UDim.new(0, 5)
+        newUIListLayout.Parent = recordContainer
+        noteInput.Text = ""
+        updateCanvasSize()
+    else
+        StarterGui:SetCore("SendNotification", {
+            Title = "No Coordinates",
+            Text = "Please record coordinates first",
+            Duration = 3
+        })
+    end
+end)
+
+-- Minimize/Restore functionality
+local isMinimized = false
+minimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        frame.Size = UDim2.new(0, 250, 0, 30)
+        noteInput.Visible = false
+        scrollingFrame.Visible = false
+        recordButton.Visible = false
+        endButton.Visible = false
+        minimizeButton.Text = "+"
+    else
+        frame.Size = UDim2.new(0, 250, 0, 300)
+        noteInput.Visible = true
+        scrollingFrame.Visible = true
+        recordButton.Visible = true
+        endButton.Visible = true
+        minimizeButton.Text = "-"
+    end
+end)
+
+-- Wait for character to load
+local function init()
+    if not player.Character then
+        player.CharacterAdded:Wait()
+    end
+    wait(0.5)
+end
+
+init()
