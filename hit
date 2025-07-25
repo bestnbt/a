@@ -1,0 +1,181 @@
+-- SETTINGS
+_G.BoxSize = 30
+_G.Enabled = true
+
+-- UTIL: Reset Hitbox
+local function resetHitbox(player)
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		pcall(function()
+			hrp.Size = Vector3.new(2, 2, 1) -- default size
+			hrp.Transparency = 1
+			hrp.BrickColor = BrickColor.new("Medium stone grey")
+			hrp.Material = Enum.Material.Plastic
+			hrp.CanCollide = true
+		end)
+	end
+end
+
+-- Highlighting Logic
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+RunService.RenderStepped:Connect(function()
+	for _, v in pairs(Players:GetPlayers()) do
+		if v ~= Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") then
+			local hrp = v.Character:FindFirstChild("HumanoidRootPart")
+			local humanoid = v.Character:FindFirstChild("Humanoid")
+
+			if _G.Enabled and hrp and humanoid.Health > 0 then
+				pcall(function()
+					hrp.Size = Vector3.new(_G.BoxSize, _G.BoxSize, _G.BoxSize)
+					hrp.Transparency = 0.4
+					hrp.BrickColor = BrickColor.new("Pastel light blue")
+					hrp.Material = Enum.Material.SmoothPlastic
+					hrp.CanCollide = false
+				end)
+			elseif hrp then
+				resetHitbox(v)
+			end
+		end
+	end
+end)
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function()
+		wait(1)
+		if not _G.Enabled then
+			resetHitbox(player)
+		end
+	end)
+end)
+
+-- GUI START
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "HighlightGui"
+gui.ResetOnSpawn = false
+
+-- Corner Style Function
+local function roundify(obj, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius)
+	corner.Parent = obj
+end
+
+-- DK Button
+local dkButton = Instance.new("TextButton", gui)
+dkButton.Size = UDim2.new(0, 70, 0, 70)
+dkButton.Position = UDim2.new(0, 20, 0, 20)
+dkButton.Text = "DK"
+dkButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+dkButton.TextColor3 = Color3.new(1, 1, 1)
+dkButton.Font = Enum.Font.GothamBlack
+dkButton.TextSize = 30
+roundify(dkButton, 16)
+
+-- Main Frame
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 240, 0, 180)
+frame.Position = UDim2.new(0.5, -120, 0.5, -90)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+roundify(frame, 12)
+frame.Visible = false
+frame.Active = true
+frame.Draggable = true
+
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "🎯 Hitbox Highlighter"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+
+-- Toggle Button
+local toggle = Instance.new("TextButton", frame)
+toggle.Size = UDim2.new(1, -20, 0, 30)
+toggle.Position = UDim2.new(0, 10, 0, 40)
+toggle.Text = "Turn Off"
+toggle.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+toggle.TextColor3 = Color3.new(1, 1, 1)
+toggle.Font = Enum.Font.Gotham
+toggle.TextSize = 16
+roundify(toggle, 8)
+
+-- Size Input
+local sizeInput = Instance.new("TextBox", frame)
+sizeInput.Size = UDim2.new(1, -20, 0, 30)
+sizeInput.Position = UDim2.new(0, 10, 0, 80)
+sizeInput.PlaceholderText = "Enter Hitbox Size"
+sizeInput.Text = tostring(_G.BoxSize)
+sizeInput.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+sizeInput.TextColor3 = Color3.new(1, 1, 1)
+sizeInput.Font = Enum.Font.Gotham
+sizeInput.TextSize = 16
+sizeInput.ClearTextOnFocus = false
+roundify(sizeInput, 8)
+
+-- Minimize Button
+local minimize = Instance.new("TextButton", frame)
+minimize.Size = UDim2.new(1, -20, 0, 30)
+minimize.Position = UDim2.new(0, 10, 0, 130)
+minimize.Text = "Minimize"
+minimize.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+minimize.TextColor3 = Color3.new(1, 1, 1)
+minimize.Font = Enum.Font.Gotham
+minimize.TextSize = 16
+roundify(minimize, 8)
+
+-- Function: Reset Hitboxes on Toggle Off
+local function resetAll()
+	for _, v in pairs(Players:GetPlayers()) do
+		if v ~= Players.LocalPlayer then
+			resetHitbox(v)
+		end
+	end
+end
+
+-- Toggle Button Logic
+toggle.MouseButton1Click:Connect(function()
+	_G.Enabled = not _G.Enabled
+	toggle.Text = _G.Enabled and "Turn Off" or "Turn On"
+	if not _G.Enabled then resetAll() end
+end)
+
+-- Size Box Logic
+sizeInput.FocusLost:Connect(function(enterPressed)
+	if enterPressed then
+		local size = tonumber(sizeInput.Text)
+		if size and size > 0 and size <= 200 then
+			_G.BoxSize = size
+		else
+			sizeInput.Text = tostring(_G.BoxSize)
+		end
+	end
+end)
+
+-- Minimize Logic
+local minimized = false
+minimize.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	for _, child in ipairs(frame:GetChildren()) do
+		if child:IsA("TextButton") or child:IsA("TextBox") then
+			if child ~= minimize then
+				child.Visible = not minimized
+			end
+		end
+	end
+	title.Visible = not minimized
+	minimize.Text = minimized and "Restore" or "Minimize"
+end)
+
+-- DK Button Toggle Main GUI
+dkButton.MouseButton1Click:Connect(function()
+	frame.Visible = not frame.Visible
+	if frame.Visible then
+		frame.Position = UDim2.new(0.5, -120, 0.5, -90) -- Centered
+	end
+end)
